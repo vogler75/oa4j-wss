@@ -1,0 +1,1 @@
+java -cp out\artifacts\wss_jar\wss.jar org.eclipse.jetty.util.security.Password password1

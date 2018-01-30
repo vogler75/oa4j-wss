@@ -1,0 +1,1 @@
+keytool -genkey -alias key1 -keyalg RSA -keypass password1 -keystore keystore.jks -storepass password1
