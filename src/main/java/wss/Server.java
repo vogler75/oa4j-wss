@@ -4,21 +4,19 @@ import at.rocworks.oa4j.base.*;
 
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.*;
-import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-import java.net.URL;
-import java.util.Objects;
 import java.util.logging.Level;
 
-public class Main {
+public class Server {
 
     public static void main(String[] args) throws Exception {
         JManager m = new JManager();
-        m.init(args).start();
-        new Main().run();
+        m.init(args);
+        m.start();
+        new Server().run();
         m.stop();
     }
 
@@ -58,20 +56,13 @@ public class Main {
         context.addServlet(defHolder,"/");
         */
 
-
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setKeyStorePath("keystore.jks");
-        sslContextFactory.setKeyStorePassword("OBF:1k1l1t331zly1xtv1z0f1xtn1zlk1t331jyd");
-        //sslContextFactory.setTrustStorePassword("OBF:1k1l1t331zly1xtv1z0f1xtn1zlk1t331jyd");
-        //sslContextFactory.setKeyManagerPassword("OBF:1k1l1t331zly1xtv1z0f1xtn1zlk1t331jyd");
-
-        Server server = new Server();
+        org.eclipse.jetty.server.Server server = new org.eclipse.jetty.server.Server();
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         server.setHandler(context);
 
         // Add websocket servlet
-        ServletHolder wsHolder = new ServletHolder("winccoa", new WinCCSocketServlet());
+        ServletHolder wsHolder = new ServletHolder("winccoa", new ServerSocketServlet());
         context.addServlet(wsHolder,"/winccoa");
 
         ServerConnector wsConnector = new ServerConnector(server);
@@ -86,11 +77,19 @@ public class Main {
         HttpConfiguration https_config = new HttpConfiguration(httpConfig);
         https_config.addCustomizer(new SecureRequestCustomizer());
 
-        ServerConnector wssConnector = new ServerConnector(server,
-                new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
-                new HttpConnectionFactory(https_config));
-        wssConnector.setPort(sslPort);
-        server.addConnector(wssConnector);
+        if (sslPort>0) {
+            SslContextFactory sslContextFactory = new SslContextFactory();
+            sslContextFactory.setKeyStorePath("keystore.jks");
+            sslContextFactory.setKeyStorePassword("OBF:1l1a1s3g1yf41xtv20731xtn1yf21s3m1kxs");
+            //sslContextFactory.setTrustStorePassword("OBF:1k1l1t331zly1xtv1z0f1xtn1zlk1t331jyd");
+            //sslContextFactory.setKeyManagerPassword("OBF:1k1l1t331zly1xtv1z0f1xtn1zlk1t331jyd");
+
+            ServerConnector wssConnector = new ServerConnector(server,
+                    new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
+                    new HttpConnectionFactory(https_config));
+            wssConnector.setPort(sslPort);
+            server.addConnector(wssConnector);
+        }
 
         try
         {
