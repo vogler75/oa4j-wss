@@ -15,22 +15,14 @@ public class Server {
     public static void main(String[] args) throws Exception {
         JManager m = new JManager();
         m.init(args);
+        m.setLoopWaitUSec(1000);
         m.start();
         new Server().run();
         m.stop();
     }
 
     public void run() throws InterruptedException {
-        //JDpQueryConnect conn = doDpQueryConnect();
-
-        JDebug.out.info("server...");
-
         wss(8080, 8443);
-
-        JDebug.out.info("done");
-
-        Thread.sleep(60*1000);
-        //conn.disconnect();
     }
 
     public void wss(int port, int sslPort) {
@@ -81,9 +73,6 @@ public class Server {
             SslContextFactory sslContextFactory = new SslContextFactory();
             sslContextFactory.setKeyStorePath("keystore.jks");
             sslContextFactory.setKeyStorePassword("OBF:1l1a1s3g1yf41xtv20731xtn1yf21s3m1kxs");
-            //sslContextFactory.setTrustStorePassword("OBF:1k1l1t331zly1xtv1z0f1xtn1zlk1t331jyd");
-            //sslContextFactory.setKeyManagerPassword("OBF:1k1l1t331zly1xtv1z0f1xtn1zlk1t331jyd");
-
             ServerConnector wssConnector = new ServerConnector(server,
                     new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
                     new HttpConnectionFactory(https_config));

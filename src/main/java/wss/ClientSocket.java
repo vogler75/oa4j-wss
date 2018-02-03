@@ -26,10 +26,12 @@ public class ClientSocket {
     private final CountDownLatch connectedLatch;
     private final CountDownLatch closeLatch;
 
-
     private WebSocketClient client = new WebSocketClient();
     private ClientUpgradeRequest request = new ClientUpgradeRequest();
     private Session session;
+
+    private Gson onMessageGson =  Messages.Gson();
+    private Gson sendMessageGson =  Messages.Gson();
 
     private static class Tuple<X, Y> {
         public final X _1;
@@ -44,6 +46,7 @@ public class ClientSocket {
         public void callback(Messages.Message message);
     }
 
+    private HashMap<Long, Tuple<Messages.Message, Callback>> dpGets = new HashMap<>();
     private HashMap<Long, Tuple<Messages.Message, Callback>> dpConnects = new HashMap<>();
     private HashMap<Long, Tuple<Messages.Message, Callback>> dpQueryConnects = new HashMap<>();
 
@@ -84,26 +87,31 @@ public class ClientSocket {
         onConnected();
     }
 
-    Gson onMessageGson = new GsonBuilder().setDateFormat(Messages.DATEFORMAT).create();
 
     @OnWebSocketMessage
     public void onWebSocketMessage(String message) {
-        //System.out.printf("Got msg: %s%n", message);
+        System.out.printf("Got msg: %s%n", message);
         Messages.Message msg = onMessageGson.fromJson(message, Messages.Message.class);
-        if (msg.DpConnectResult!=null) {
-            Tuple<Messages.Message, Callback> x = dpConnects.get(msg.DpConnectResult.Id);
+        if (msg==null) {
+        }
+        else if (msg.dpGetResult !=null) {
+            Tuple<Messages.Message, Callback> x = dpGets.get(msg.dpGetResult.id);
             if (x!=null) x._2.callback(msg);
         }
-        else if (msg.DpQueryConnectResult!=null) {
-            Tuple<Messages.Message, Callback> x = dpQueryConnects.get(msg.DpQueryConnectResult.Id);
+        else if (msg.dpConnectResult!=null) {
+            Tuple<Messages.Message, Callback> x = dpConnects.get(msg.dpConnectResult.id);
+            if (x!=null) x._2.callback(msg);
+        }
+        else if (msg.dpQueryConnectResult!=null) {
+            Tuple<Messages.Message, Callback> x = dpQueryConnects.get(msg.dpQueryConnectResult.id);
             if (x!=null) x._2.callback(msg);
         }
         onMessage(msg);
     }
 
-    Gson sendMessageGson = new GsonBuilder().setDateFormat(Messages.DATEFORMAT).create();
     public boolean sendMessage(Messages.Message message) throws IOException {
         if (session!=null) {
+            //System.out.println("sendMessage: "+sendMessageGson.toJson(message));
             session.getRemote().sendString(sendMessageGson.toJson(message));
             return true;
         } else {
@@ -118,6 +126,50 @@ public class ClientSocket {
     }
 
     //------------------------------------------------------------------------------------------------------------------
+    public boolean dpGet(List<String> dps, Callback callback) {
+        Messages.Message msg = new Messages.Message().DpGet(dps);
+        try {
+            if (sendMessage(msg)) {
+                dpGets.put(msg.dpGet.id, new Tuple(msg, callback));
+                return true;
+            } else {
+                return false;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    //------------------------------------------------------------------------------------------------------------------
+    public boolean dpSet(List<Messages.DpValue> values) {
+        return dpSet(values, null, null);
+    }
+    public boolean dpSet(List<Messages.DpValue> values, Date timestamp, Boolean wait) {
+        Messages.Message msg = new Messages.Message().DpSet(values, timestamp, wait);
+        try {
+            return sendMessage(msg);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean dpSet(String dp, Object value) {
+        return dpSet(dp, value, null, null);
+    }
+    public boolean dpSet(String dp, Object value, Date timestamp, Boolean wait) {
+
+        Messages.Message msg = new Messages.Message().DpSet(Arrays.asList(new Messages.DpValue(dp, value)), timestamp, wait);
+        try {
+            return sendMessage(msg);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    //------------------------------------------------------------------------------------------------------------------
     public boolean dpConnect(List<String> dps, Callback callback) {
         return dpConnect(dps, null, callback);
     }
@@ -125,7 +177,7 @@ public class ClientSocket {
         Messages.Message msg = new Messages.Message().DpConnect(dps, answer);
         try {
             if (sendMessage(msg)) {
-                dpConnects.put(msg.DpConnect.Id, new Tuple(msg, callback));
+                dpConnects.put(msg.dpConnect.id, new Tuple(msg, callback));
                 return true;
             } else {
                 return false;
@@ -144,39 +196,11 @@ public class ClientSocket {
         Messages.Message msg = new Messages.Message().DpQueryConnect(query, answer);
         try {
             if (sendMessage(msg)) {
-                dpQueryConnects.put(msg.DpQueryConnect.Id, new Tuple(msg, callback));
+                dpQueryConnects.put(msg.dpQueryConnect.id, new Tuple(msg, callback));
                 return true;
             } else {
                 return false;
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    //------------------------------------------------------------------------------------------------------------------
-    public boolean dpSet(List<Messages.DpVCItem> values) {
-        return dpSet(values, null, null);
-    }
-    public boolean dpSet(List<Messages.DpVCItem> values, Date timestamp, Boolean wait) {
-        Messages.Message msg = new Messages.Message().DpSet(values, timestamp, wait);
-        try {
-            return sendMessage(msg);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    public boolean dpSet(String dp, Object value) {
-        return dpSet(dp, value, null, null);
-    }
-    public boolean dpSet(String dp, Object value, Date timestamp, Boolean wait) {
-
-        Messages.Message msg = new Messages.Message().DpSet(Arrays.asList(new Messages.DpVCItem(dp, value)), timestamp, wait);
-        try {
-            return sendMessage(msg);
         } catch (IOException e) {
             e.printStackTrace();
             return false;
