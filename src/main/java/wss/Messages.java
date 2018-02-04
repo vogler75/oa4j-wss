@@ -8,18 +8,18 @@ import java.util.List;
 public class Messages {
     public static String DATEFORMAT = "yyyy-MM-dd'T'HH:mm:ss.S";
 
-    private static Long serialnr = 0L;
-    public static Long nextId() {
-        synchronized (serialnr) {
-            return ++serialnr;
-        }
-    }
-
     public static Gson Gson() {
         return new GsonBuilder()
                 .setDateFormat(Messages.DATEFORMAT)
                 .setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE)
                 .create();
+    }
+
+    private static Long serialnr = 0L;
+    public static Long nextId() {
+        synchronized (serialnr) {
+            return ++serialnr;
+        }
     }
 
     //------------------------------------------------------------------------------------------------------------------
@@ -31,49 +31,94 @@ public class Messages {
 
         DpConnect dpConnect;
         DpConnectResult dpConnectResult;
+        DpDisconnect dpDisconnect;
 
         DpQueryConnect dpQueryConnect;
         DpQueryConnectResult dpQueryConnectResult;
+        DpQueryDisconnect dpQueryDisconnect;
+
+        DpGetPeriod dpGetPeriod;
+        DpGetPeriodResult dpGetPeriodResult;
 
         Response response;
 
-        public Message DpSet(List<DpValue> Values, Date Timestamp, Boolean Wait) {
-            this.dpSet =new DpSet(Values, Timestamp, Wait);
+        public Message DpSet(List<DpValue> values, Date timestamp, Boolean wait) {
+            this.dpSet =new DpSet(values, timestamp, wait);
             return this;
         }
 
-        public Message DpGet(List<String> Dps) {
-            this.dpGet =new DpGet(Dps);
+        public Message DpGet(List<String> dps) {
+            this.dpGet =new DpGet(dps);
             return this;
         }
 
-        public Message DpGetResult(Long Id, JsonObject Values) {
-            this.dpGetResult =new DpGetResult(Id, Values);
+        public Message DpGetResult(Long id, JsonObject values) {
+            this.dpGetResult =new DpGetResult(id, values);
             return this;
         }
 
-        public Message DpConnect(List<String> Dps, Boolean Answer) {
-            this.dpConnect =new DpConnect(Dps, Answer);
+        public Message DpGetResult(Long id, Integer error) {
+            this.dpGetResult =new DpGetResult(id, error);
             return this;
         }
 
-        public Message DpConnectResult(Long Id, JsonObject Values) {
-            this.dpConnectResult=new DpConnectResult(Id, Values);
+        public Message DpConnect(List<String> dps, Boolean answer) {
+            this.dpConnect =new DpConnect(dps, answer);
             return this;
         }
 
-        public Message DpQueryConnect(String Query, Boolean Answer) {
-            this.dpQueryConnect =new DpQueryConnect(Query, Answer);
+        public Message DpConnectResult(Long id, JsonObject values) {
+            this.dpConnectResult=new DpConnectResult(id, values);
             return this;
         }
 
-        public Message DpQueryConnectResult(Long Id, JsonArray Header, JsonArray Values) {
-            this.dpQueryConnectResult=new DpQueryConnectResult(Id, Header, Values);
+        public Message DpConnectResult(Long id, Integer error) {
+            this.dpConnectResult=new DpConnectResult(id, error);
             return this;
         }
 
-        public Message Response(Long Id, Integer Code, String Message) {
-            this.response =new Response(Id, Code, Message);
+        public Message DpDisconnect(Long id) {
+            this.dpDisconnect=new DpDisconnect(id);
+            return this;
+        }
+
+        public Message DpQueryConnect(String query, Boolean answer) {
+            this.dpQueryConnect =new DpQueryConnect(query, answer);
+            return this;
+        }
+
+        public Message DpQueryConnectResult(Long id, JsonArray header, JsonArray values) {
+            this.dpQueryConnectResult=new DpQueryConnectResult(id, header, values);
+            return this;
+        }
+
+        public Message DpQueryConnectResult(Long id, Integer error) {
+            this.dpQueryConnectResult=new DpQueryConnectResult(id, error);
+            return this;
+        }
+
+        public Message DpQueryDisconnect(Long id) {
+            this.dpQueryDisconnect=new DpQueryDisconnect(id);
+            return this;
+        }
+
+        public Message DpGetPeriod(List<String>dps, Date t1, Date t2, Integer count) {
+            this.dpGetPeriod =new DpGetPeriod(dps, t1, t2, count);
+            return this;
+        }
+
+        public Message DpGetPeriodResult(Long id, JsonObject values) {
+            this.dpGetPeriodResult = new DpGetPeriodResult(id, values);
+            return this;
+        }
+
+        public Message DpGetPeriodResult(Long id, Integer error) {
+            this.dpGetPeriodResult = new DpGetPeriodResult(id, error);
+            return this;
+        }
+
+        public Message Response(Long id, Integer code, String message) {
+            this.response =new Response(id, code, message);
             return this;
         }
     }
@@ -86,6 +131,18 @@ public class Messages {
         }
         public SerialId(Long Id) {
             this.id =Id;
+        }
+    }
+
+    public static class Result extends SerialId {
+        public Integer error;
+        public Result(Long id, Integer error) {
+            super(id);
+            this.error=error;
+        }
+        public Result(Long id) {
+            super(id);
+            this.error=0;
         }
     }
 
@@ -122,19 +179,30 @@ public class Messages {
     }
 
     //------------------------------------------------------------------------------------------------------------------
-    public static class DpGet extends SerialId {
+    public static class DpConnect extends SerialId {
         List<String> dps;
-        public DpGet(List<String> dps) {
+        Boolean answer; // Optional: get initial values
+        public DpConnect(List<String> dps, Boolean answer) {
             super();
             this.dps =dps;
+            this.answer =answer;
         }
     }
 
-    public static class DpGetResult extends SerialId {
+    public static class DpConnectResult extends Result {
         JsonObject values;
-        public DpGetResult(Long id, JsonObject values) {
+        public DpConnectResult(Long id, JsonObject values) {
             super(id);
             this.values =values;
+        }
+        public DpConnectResult(Long id, Integer error) {
+            super(id, error);
+        }
+    }
+
+    public static class DpDisconnect extends SerialId {
+        public DpDisconnect(Long id) {
+            this.id=id;
         }
     }
 
@@ -149,7 +217,7 @@ public class Messages {
         }
     }
 
-    public static class DpQueryConnectResult extends SerialId {
+    public static class DpQueryConnectResult extends Result {
         JsonArray header;
         JsonArray values;
         public DpQueryConnectResult(Long id, JsonArray header, JsonArray values) {
@@ -157,24 +225,61 @@ public class Messages {
             this.header =header;
             this.values =values;
         }
-    }
-
-    //------------------------------------------------------------------------------------------------------------------
-    public static class DpConnect extends SerialId {
-        List<String> dps;
-        Boolean answer; // Optional: get initial values
-        public DpConnect(List<String> dps, Boolean answer) {
-            super();
-            this.dps =dps;
-            this.answer =answer;
+        public DpQueryConnectResult(Long id, Integer error) {
+            super(id, error);
         }
     }
 
-    public static class DpConnectResult extends SerialId {
+    public static class DpQueryDisconnect extends SerialId {
+        public DpQueryDisconnect(Long id) {
+            this.id=id;
+        }
+    }
+
+    //------------------------------------------------------------------------------------------------------------------
+    public static class DpGet extends SerialId {
+        List<String> dps;
+        public DpGet(List<String> dps) {
+            super();
+            this.dps =dps;
+        }
+    }
+
+    public static class DpGetResult extends Result {
         JsonObject values;
-        public DpConnectResult(Long id, JsonObject values) {
+        public DpGetResult(Long id, JsonObject values) {
             super(id);
             this.values =values;
+        }
+        public DpGetResult(Long id, Integer error) {
+            super(id, error);
+        }
+    }
+
+    //------------------------------------------------------------------------------------------------------------------
+    public static class DpGetPeriod extends SerialId {
+        List<String> dps;
+        Date t1;
+        Date t2;
+        Integer count;
+
+        public DpGetPeriod(List<String> dps, Date t1, Date t2, Integer count) {
+            super();
+            this.dps =dps;
+            this.t1 =t1;
+            this.t2 =t2;
+            this.count =count;
+        }
+    }
+
+    public static class DpGetPeriodResult extends Result {
+        JsonObject values;
+        public DpGetPeriodResult(Long id, JsonObject values) {
+            super(id);
+            this.values =values;
+        }
+        public DpGetPeriodResult(Long id, Integer error) {
+            super(id, error);
         }
     }
 }

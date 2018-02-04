@@ -11,6 +11,7 @@ import org.eclipse.jetty.websocket.api.WebSocketListener;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -21,8 +22,8 @@ public class ServerSocket implements WebSocketListener
 {
     private Session session;
 
-    private ArrayList<JDpConnect> dpConnects = new ArrayList<>();
-    private ArrayList<JDpQueryConnect> dpQueryConnects = new ArrayList<>();
+    private HashMap<Long, JDpConnect> dpConnects = new HashMap<>();
+    private HashMap<Long, JDpQueryConnect> dpQueryConnects = new HashMap<>();
 
     final LinkedBlockingQueue<Messages.Message> mailbox = new LinkedBlockingQueue<>();
     //private PublishSubject<Messages.message> mailbox = PublishSubject.create();
@@ -56,37 +57,45 @@ public class ServerSocket implements WebSocketListener
     public void onWebSocketClose(int statusCode, String reason)
     {
         JDebug.out.info("WebSocket Close: {"+statusCode+"} - {"+reason+"}");
-        dpConnects.forEach((c)->c.disconnect());
-        dpQueryConnects.forEach((c)->c.disconnect());
+        dpConnects.forEach((k, c)->c.disconnect());
+        dpQueryConnects.forEach((k, c)->c.disconnect());
     }
 
     public void onWebSocketError(Throwable cause)
     {
+        JDebug.out.warning("WebSocket Error: "+cause.getMessage());
+        /*
         StringWriter sw = new StringWriter();
         cause.printStackTrace(new PrintWriter(sw));
         String sStackTrace = sw.toString();
         JDebug.out.warning("WebSocket Error: "+sStackTrace);
-        //JDebug.out.warning("WebSocket Error: "+cause.getMessage());
+        */
     }
 
     public void onWebSocketText(String message)
     {
         if (session.isOpen()) {
             //JDebug.out.info("Got onMessage: "+message);
-
             Messages.Message msg = onWebSocketTextGson.fromJson(message, Messages.Message.class);
-
-            if (msg.dpSet != null)
-                cmdDpSet(msg.dpSet);
-            else if (msg.dpGet != null)
-                cmdDpGet(msg.dpGet);
-            else if (msg.dpConnect != null)
-                cmdDpConnect(msg.dpConnect);
-            else if (msg.dpQueryConnect != null)
-                cmdDpQueryConnect(msg.dpQueryConnect);
-            else {
-                JDebug.out.warning("unknown message: " + message);
-            }
+            //synchronized (session) {
+                if (msg.dpSet != null)
+                    cmdDpSet(msg.dpSet);
+                else if (msg.dpGet != null)
+                    cmdDpGet(msg.dpGet);
+                else if (msg.dpConnect != null)
+                    cmdDpConnect(msg.dpConnect);
+                else if (msg.dpDisconnect != null)
+                    cmdDpDisconnect(msg.dpDisconnect);
+                else if (msg.dpQueryConnect != null)
+                    cmdDpQueryConnect(msg.dpQueryConnect);
+                else if (msg.dpQueryDisconnect != null)
+                    cmdDpQueryDisconnect(msg.dpQueryDisconnect);
+                else if (msg.dpGetPeriod != null)
+                    cmdDpGetPeriod(msg.dpGetPeriod);
+                else {
+                    JDebug.out.warning("unknown message: " + message);
+                }
+            //}
         }
     }
 
@@ -103,7 +112,9 @@ public class ServerSocket implements WebSocketListener
                 Messages.Message message = mailbox.poll(100, TimeUnit.MILLISECONDS);
                 if (message!=null) {
                     String json = mailboxThreadGson.toJson(message);
-                    session.getRemote().sendString(json, null);
+                    //synchronized (session) {
+                        session.getRemote().sendString(json, null);
+                    //}
                 }
             } catch (InterruptedException e) {
                 JDebug.StackTrace(Level.SEVERE, e);
@@ -117,11 +128,11 @@ public class ServerSocket implements WebSocketListener
         dpGet.async();
         cmd.dps.forEach((dp)->dpGet.add(dp));
         dpGet.action((JDpMsgAnswer hl)-> dpGetHotlink(cmd.id, hl));
-        mailbox.add(new Messages.Message().Response(cmd.id, 0, ""));
-        dpGet.send();
+        int ret = dpGet.send().await().getRetCode();
+        if (ret!=0) mailbox.add(new Messages.Message().DpGetResult(cmd.id, ret));
     }
 
-    private void dpGetHotlink(Long Id, JDpVCGroup hotlink) {
+    private void dpGetHotlink(Long Id, JDpMsgAnswer hotlink) {
         JsonObject jsonValues = new JsonObject();
         hotlink.forEach((item)->jsonValues.add(item.getDpName(), var2json(item.getVariable())));
         mailbox.add(new Messages.Message().DpGetResult(Id, jsonValues));
@@ -150,14 +161,21 @@ public class ServerSocket implements WebSocketListener
         connect.action((JDpHLGroup hl)-> dpConnectHotlink(cmd.id, hl));
         if (cmd.answer !=null && cmd.answer) connect.action((JDpMsgAnswer hl)->dpConnectHotlink(cmd.id, hl));
         int ret = connect.connect().getRetCode();
-        if (ret==0) dpConnects.add(connect);
-        mailbox.add(new Messages.Message().Response(cmd.id, ret, ""));
+        if (ret==0) dpConnects.put(cmd.id, connect);
+        else mailbox.add(new Messages.Message().DpConnectResult(cmd.id, ret));
     }
 
     private void dpConnectHotlink(Long Id, JDpVCGroup hotlink) {
+        //JDebug.out.info(hotlink.toString());
         JsonObject jsonValues = new JsonObject();
         hotlink.forEach((item)->jsonValues.add(item.getDpName(), var2json(item.getVariable())));
         mailbox.add(new Messages.Message().DpConnectResult(Id, jsonValues));
+    }
+
+    public void cmdDpDisconnect(Messages.DpDisconnect cmd) {
+        JDpConnect connect = dpConnects.get(cmd.id);
+        if (connect!=null) connect.disconnect();
+        dpConnects.remove(cmd.id);
     }
 
     //------------------------------------------------------------------------------------------------------------------
@@ -167,11 +185,12 @@ public class ServerSocket implements WebSocketListener
         connect.action((JDpHLGroup hl)-> dpQueryConnectHotlink(cmd.id, hl));
         if (cmd.answer !=null && cmd.answer) connect.action((JDpMsgAnswer hl)-> dpQueryConnectHotlink(cmd.id, hl));
         int ret = connect.connect().getRetCode();
-        if (ret==0) dpQueryConnects.add(connect);
-        mailbox.add(new Messages.Message().Response(cmd.id, ret, ""));
+        if (ret==0) dpQueryConnects.put(cmd.id, connect);
+        else mailbox.add(new Messages.Message().DpQueryConnectResult(cmd.id, ret));
     }
 
     private void dpQueryConnectHotlink(Long Id, JDpVCGroup hotlink) {
+        //JDebug.out.info(hotlink.toString());
         // first item is the header, it is a dyn of the selected attributes
         if ( hotlink.getNumberOfItems() > 1 ) {
             JsonArray jsonHeader = null;
@@ -201,6 +220,42 @@ public class ServerSocket implements WebSocketListener
             }
             mailbox.add(new Messages.Message().DpQueryConnectResult(Id, jsonHeader, jsonValues));
         }
+    }
+
+    public void cmdDpQueryDisconnect(Messages.DpQueryDisconnect cmd) {
+        JDebug.out.info("dpQueryDisconnect: "+cmd.id);
+        JDpQueryConnect connect = dpQueryConnects.get(cmd.id);
+        if (connect!=null) connect.disconnect();
+        dpQueryConnects.remove(cmd.id);
+    }
+
+    //------------------------------------------------------------------------------------------------------------------
+    private void cmdDpGetPeriod(Messages.DpGetPeriod cmd) {
+        JDpGetPeriod dpGetPeriod = JClient.dpGetPeriod(cmd.t1, cmd.t2, cmd.count);
+        dpGetPeriod.async();
+        cmd.dps.forEach((dp)->dpGetPeriod.add(dp));
+        dpGetPeriod.action((JDpMsgAnswer hl)-> dpGetPeriodHotlink(cmd.id, hl));
+        int ret = dpGetPeriod.send().await().getRetCode();
+        if (ret!=0) mailbox.add(new Messages.Message().DpGetPeriodResult(cmd.id, ret));
+    }
+
+    private void dpGetPeriodHotlink(Long Id, JDpMsgAnswer hotlink) {
+        //JDebug.out.info(hotlink.toString());
+        JsonObject jsonValues = new JsonObject();
+        hotlink.forEach((item)->{
+            JsonArray jdps;
+            if (jsonValues.has(item.getDpName())) {
+                jdps=jsonValues.get(item.getDpName()).getAsJsonArray();
+            } else {
+                jdps=new JsonArray();
+                jsonValues.add(item.getDpName(), jdps);
+            }
+            JsonArray jrec = new JsonArray();
+            jrec.add(item.getTime());
+            jrec.add(var2json(item.getVariable()));
+            jdps.add(jrec);
+        });
+        mailbox.add(new Messages.Message().DpGetPeriodResult(Id, jsonValues));
     }
 
     //------------------------------------------------------------------------------------------------------------------
