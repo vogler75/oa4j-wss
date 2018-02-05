@@ -39,7 +39,7 @@ public class ServerSocket implements WebSocketListener
         JDebug.out.info("parameter: "+parameter.toString());
         if (!parameter.containsKey("username") || parameter.get("username").size()==0 ||
             !parameter.containsKey("password") || parameter.get("password").size()==0)
-            session.close();
+            session.close(1000, "invalid username and/or password!");
 
         String username=parameter.get("username").get(0);
         String password=parameter.get("password").get(0);
@@ -50,7 +50,7 @@ public class ServerSocket implements WebSocketListener
             //mailbox.asObservable().subscribe(this::sendMessage);
         } else {
             JDebug.out.info("invalid username and/or password!");
-            session.close();
+            session.close(1001, "invalid username and/or password!");
         }
     }
 
@@ -260,6 +260,7 @@ public class ServerSocket implements WebSocketListener
 
     //------------------------------------------------------------------------------------------------------------------
     private JsonElement var2json(Variable var) {
+        if (var==null) return JsonNull.INSTANCE;
         switch (var.isA()) {
             case BitVar:
                 return new JsonPrimitive(var.getBitVar().getValue());

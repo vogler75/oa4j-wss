@@ -15,10 +15,19 @@ public class Messages {
                 .create();
     }
 
-    private static Long serialnr = 0L;
+    private static Long serialNr = 0L;
     public static Long nextId() {
-        synchronized (serialnr) {
-            return ++serialnr;
+        synchronized (serialNr) {
+            return ++serialNr;
+        }
+    }
+
+    public static class Tuple<X, Y> {
+        public final X _1;
+        public final Y _2;
+        public Tuple(X _1, Y _2) {
+            this._1 = _1;
+            this._2 = _2;
         }
     }
 
