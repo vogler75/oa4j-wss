@@ -19,6 +19,7 @@ package wss;
 
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 
 import com.google.gson.JsonArray;
 
@@ -26,10 +27,22 @@ public class Client {
 
     public static void main(String[] args)
     {
-        String url = "ws://localhost:8080/winccoa?username=demo&password=demo";
-        if (args.length > 0) url = args[0];
+        final String url = (args.length > 0) ? args[0] : "ws://server2:8080/winccoa?username=demo&password=demo";
 
-        ClientSocket client = new ClientSocket();
+        ClientSocket client = new ClientSocket() {
+            @Override
+            public void onWebSocketClose(int statusCode, String reason) {
+                super.onWebSocketClose(statusCode, reason);
+                while (!this.session.isOpen()) {
+                    try {
+                        Thread.sleep(1000);
+                        this.open(url);
+                    } catch (Exception e) {
+                        System.out.println(e.getMessage());
+                    }
+                }
+            }
+        };
         try
         {
             System.out.printf("Connecting to : %s%n",url);
@@ -37,7 +50,7 @@ public class Client {
             client.awaitConnected();
 
 
-            client.dpConnect(Arrays.asList("System1:pump_00001.value.speed", "System1:Test1."), true, (message)->{
+            client.dpConnect(Arrays.asList("System1:pump_00001.value.speed", "System1:pump_00002.value.speed"), true, (message)->{
                 //System.out.println("dpConnect: "+message.DpConnectResult.values.toString());
                 message.dpConnectResult.values.getAsJsonObject().keySet().forEach((dp)->{
                     String dpname = dp.split(":")[1];
@@ -74,7 +87,7 @@ public class Client {
                     i++;
                     client.dpSet("System1:ExampleDP_Trend1.", i);
                     try {
-                        Thread.sleep(1000);
+                        Thread.sleep(100);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -84,8 +97,8 @@ public class Client {
             for (int i=1;i<=1000;i++) {
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd HH:mm:SS");
                 client.dpGetPeriod(Arrays.asList("System1:ExampleDP_Trend1.:_offline.._value"),
-                        sdf.parse("2018.02.04 00:00:00"),
-                        sdf.parse("2018.02.05 00:00:00"),
+                        new Date(new Date().getTime()-1000*60*60), //sdf.parse("2018.02.04 00:00:00"),
+                        new Date(new Date().getTime()), //sdf.parse("2018.02.05 00:00:00"),
                         0, (message) -> {
                             //System.out.println("dpGetPeriod: "+message.dpGetPeriodResult.values.toString());
                             JsonArray arr = message.dpGetPeriodResult.values.get("System1:ExampleDP_Trend1.:_offline.._value").getAsJsonArray();

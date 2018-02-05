@@ -32,7 +32,7 @@ public class Server {
     public static void main(String[] args) throws Exception {
         JManager m = new JManager();
         m.init(args);
-        m.setLoopWaitUSec(1000);
+        //m.setLoopWaitUSec(1000);
         m.start();
         new Server().run();
         m.stop();
@@ -43,34 +43,11 @@ public class Server {
     }
 
     public void wss(int port, int sslPort) {
-        /*
-        Server server = new Server(8080);
-
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/");
-        server.setHandler(context);
-
-        // Add websocket servlet
-        ServletHolder wsHolder = new ServletHolder("winccoa", new WinCCSocketServlet());
-        context.addServlet(wsHolder,"/winccoa");
-
-        // Add default servlet (to serve the html/css/js)
-        // Figure out where the static files are stored.
-        URL urlStatics = Thread.currentThread().getContextClassLoader().getResource("index.html");
-        Objects.requireNonNull(urlStatics,"Unable to find index.html in classpath");
-        String urlBase = urlStatics.toExternalForm().replaceFirst("/[^/]*$","/");
-        ServletHolder defHolder = new ServletHolder("default",new DefaultServlet());
-        defHolder.setInitParameter("resourceBase",urlBase);
-        defHolder.setInitParameter("dirAllowed","true");
-        context.addServlet(defHolder,"/");
-        */
-
         org.eclipse.jetty.server.Server server = new org.eclipse.jetty.server.Server();
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         server.setHandler(context);
 
-        // Add websocket servlet
         ServletHolder wsHolder = new ServletHolder("winccoa", new ServerSocketServlet());
         context.addServlet(wsHolder,"/winccoa");
 

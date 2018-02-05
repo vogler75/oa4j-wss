@@ -31,6 +31,7 @@ import at.rocworks.oa4j.base.JDebug;
 import com.google.gson.*;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
@@ -38,19 +39,18 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 
-@WebSocket(maxTextMessageSize = 128 * 1024)
-public class ClientSocket {
+//@WebSocket(maxTextMessageSize = 128 * 1024)
+public class ClientSocket implements WebSocketListener {
     private final CountDownLatch connectedLatch;
     private final CountDownLatch closeLatch;
 
     private WebSocketClient client = new WebSocketClient();
     private ClientUpgradeRequest request = new ClientUpgradeRequest();
-    private Session session;
+    protected Session session;
 
     final LinkedBlockingQueue<Messages.Message> mailbox = new LinkedBlockingQueue<>();
 
     private Gson onMessageGson =  Messages.Gson();
-    private Gson sendMessageGson =  Messages.Gson();
     private Gson mailboxThreadGson =  Messages.Gson();
 
     public static interface Callback {
@@ -82,28 +82,25 @@ public class ClientSocket {
         this.closeLatch.await();
     }
 
-    public void onConnected() {}
-    public void onClosed() {}
-    public void onMessage(Messages.Message message) {}
-
-    @OnWebSocketClose
     public void onWebSocketClose(int statusCode, String reason) {
         System.out.printf("Connection closed: %d - %s%n", statusCode, reason);
         this.closeLatch.countDown();
-        onClosed();
     }
 
-    @OnWebSocketConnect
     public void onWebSocketConnect(Session session) {
         System.out.printf("Got connect: %s%n", session);
         this.session = session;
         this.connectedLatch.countDown();
         new Thread(()-> mailboxThread()).start();
-        onConnected();
     }
 
-    @OnWebSocketMessage
-    public void onWebSocketMessage(String message) {
+    @Override
+    public void onWebSocketError(Throwable cause) {
+        System.out.println("WebSocket Error: "+cause.getMessage());
+    }
+
+    @Override
+    public void onWebSocketText(String message) {
         //System.out.printf("Got msg: %s%n", message);
         Messages.Message msg = onMessageGson.fromJson(message, Messages.Message.class);
         if (msg == null) {
@@ -124,7 +121,11 @@ public class ClientSocket {
             if (x != null) x._2.callback(msg);
             dpGetPeriods.remove(msg.dpGetPeriodResult.id);
         }
-        onMessage(msg);
+    }
+
+    @Override
+    public void onWebSocketBinary(byte[] bytes, int i, int i1) {
+
     }
 
     //------------------------------------------------------------------------------------------------------------------
