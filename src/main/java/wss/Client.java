@@ -1,3 +1,20 @@
+/*
+    OA4J - WinCC Open Architecture for Java
+    Copyright (C) 2017 Andreas Vogler
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 package wss;
 
 import java.text.SimpleDateFormat;
@@ -51,7 +68,6 @@ public class Client {
                     System.out.println("dpGet: "+message.dpGetResult.error);
             });
 
-            /*
             new Thread(()->{
                 int i=0;
                 while (true) {
@@ -65,7 +81,7 @@ public class Client {
                 }
             }).start();
 
-            for (int i=1;i<=10000;i++) {
+            for (int i=1;i<=1000;i++) {
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd HH:mm:SS");
                 client.dpGetPeriod(Arrays.asList("System1:ExampleDP_Trend1.:_offline.._value"),
                         sdf.parse("2018.02.04 00:00:00"),
@@ -75,17 +91,13 @@ public class Client {
                             JsonArray arr = message.dpGetPeriodResult.values.get("System1:ExampleDP_Trend1.:_offline.._value").getAsJsonArray();
                             System.out.println("dpGetPeriod: " + arr.size());
                         });
-                Thread.sleep(500);
+                Thread.sleep(1000);
             }
-            */
 
-            //client.dpQueryDisconnect(dpqc);
+            client.dpQueryDisconnect(dpqc);
 
             // wait for closed socket connection.
             client.awaitClose();
-
-            //Future<Void> f = session.getRemote().sendStringByFuture(gson.toJson(msg1));
-            //f.get(2,TimeUnit.SECONDS); // wait for send to complete.
         }
         catch (Throwable t)
         {

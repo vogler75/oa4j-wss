@@ -1,6 +1,22 @@
+/*
+    OA4J - WinCC Open Architecture for Java
+    Copyright (C) 2017 Andreas Vogler
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 package wss;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Date;
@@ -22,10 +38,6 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 
-/**
- * Basic Echo Client Socket
- */
-// maxTextMessageSize = 64 * 1024
 @WebSocket(maxTextMessageSize = 128 * 1024)
 public class ClientSocket {
     private final CountDownLatch connectedLatch;
