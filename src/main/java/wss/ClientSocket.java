@@ -17,14 +17,14 @@
 */
 package wss;
 
+import java.io.IOException;
+import java.net.ConnectException;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 
 import at.rocworks.oa4j.base.JDebug;
@@ -44,6 +44,7 @@ public class ClientSocket implements WebSocketListener {
     private final CountDownLatch connectedLatch;
     private final CountDownLatch closeLatch;
 
+    URI uri;
     private WebSocketClient client = new WebSocketClient();
     private ClientUpgradeRequest request = new ClientUpgradeRequest();
     protected Session session;
@@ -52,6 +53,8 @@ public class ClientSocket implements WebSocketListener {
 
     private Gson onMessageGson =  Messages.Gson();
     private Gson mailboxThreadGson =  Messages.Gson();
+
+    private Thread mailboxThread = new Thread(()-> mailboxThread());
 
     public static interface Callback {
         public void callback(Messages.Message message);
@@ -66,12 +69,17 @@ public class ClientSocket implements WebSocketListener {
     public ClientSocket() {
         this.closeLatch = new CountDownLatch(1);
         this.connectedLatch = new CountDownLatch(1);
+        mailboxThread.start();
     }
 
     public void open(String url) throws Exception {
-        URI uri = new URI(url);
+        uri = new URI(url);
         client.start();
         client.connect(this, uri, request);
+    }
+
+    public boolean isOpen() {
+        return session.isOpen();
     }
 
     public void awaitConnected() throws InterruptedException {
@@ -91,12 +99,11 @@ public class ClientSocket implements WebSocketListener {
         System.out.printf("Got connect: %s%n", session);
         this.session = session;
         this.connectedLatch.countDown();
-        new Thread(()-> mailboxThread()).start();
     }
 
     @Override
     public void onWebSocketError(Throwable cause) {
-        System.out.println("WebSocket Error: "+cause.getMessage());
+        cause.printStackTrace();
     }
 
     @Override
@@ -130,16 +137,16 @@ public class ClientSocket implements WebSocketListener {
 
     //------------------------------------------------------------------------------------------------------------------
     private void mailboxThread() {
-        while (session.isOpen()) {
-            try {
+        try {
+            while (true) {
                 Messages.Message message = mailbox.poll(100, TimeUnit.MILLISECONDS);
-                if (message!=null) {
+                if (session != null && session.isOpen() && message != null) {
                     String json = mailboxThreadGson.toJson(message);
                     session.getRemote().sendString(json, null);
                 }
-            } catch (InterruptedException e) {
-                JDebug.StackTrace(Level.SEVERE, e);
             }
+        } catch (InterruptedException e) {
+            JDebug.StackTrace(Level.SEVERE, e);
         }
     }
 
@@ -206,8 +213,8 @@ public class ClientSocket implements WebSocketListener {
     }
 
     //------------------------------------------------------------------------------------------------------------------
-    public void dpGetPeriod(List<String> dps, Date t1, Date t2, Integer count, Callback callback) {
-        Messages.Message msg = new Messages.Message().DpGetPeriod(dps, t1, t2, count);
+    public void dpGetPeriod(List<String> dps, Date t1, Date t2, Integer count, Integer ts, Callback callback) {
+        Messages.Message msg = new Messages.Message().DpGetPeriod(dps, t1, t2, count, ts);
         mailbox.add(msg);
         dpGetPeriods.put(msg.dpGetPeriod.id, new Messages.Tuple(msg, callback));
     }

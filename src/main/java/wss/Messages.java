@@ -128,8 +128,8 @@ public class Messages {
             return this;
         }
 
-        public Message DpGetPeriod(List<String>dps, Date t1, Date t2, Integer count) {
-            this.dpGetPeriod =new DpGetPeriod(dps, t1, t2, count);
+        public Message DpGetPeriod(List<String>dps, Date t1, Date t2, Integer count, Integer ts) {
+            this.dpGetPeriod =new DpGetPeriod(dps, t1, t2, count, ts);
             return this;
         }
 
@@ -288,13 +288,15 @@ public class Messages {
         Date t1;
         Date t2;
         Integer count;
+        Integer ts; // 0... no ts in result, 1... ts as ms since epoch, 2...ts as ISO8601
 
-        public DpGetPeriod(List<String> dps, Date t1, Date t2, Integer count) {
+        public DpGetPeriod(List<String> dps, Date t1, Date t2, Integer count, Integer ts) {
             super();
             this.dps =dps;
             this.t1 =t1;
             this.t2 =t2;
             this.count =count;
+            this.ts = ts;
         }
     }
 

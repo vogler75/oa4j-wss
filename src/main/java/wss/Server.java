@@ -55,7 +55,6 @@ public class Server {
         wsConnector.setPort(port);
         server.addConnector(wsConnector);
 
-
         HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.setSecureScheme("https");
         httpConfig.setSecurePort(sslPort);

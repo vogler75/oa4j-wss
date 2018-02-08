@@ -25,6 +25,7 @@ import com.google.gson.*;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 
+import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +35,11 @@ import java.util.logging.Level;
 
 public class ServerSocket implements WebSocketListener
 {
+    public static Integer mutex = 0;
+
     private Session session;
+
+    private String username, password;
 
     private HashMap<Long, JDpConnect> dpConnects = new HashMap<>();
     private HashMap<Long, JDpQueryConnect> dpQueryConnects = new HashMap<>();
@@ -53,18 +58,22 @@ public class ServerSocket implements WebSocketListener
         JDebug.out.info("parameter: "+parameter.toString());
         if (!parameter.containsKey("username") || parameter.get("username").size()==0 ||
             !parameter.containsKey("password") || parameter.get("password").size()==0)
-            session.close(1000, "invalid username and/or password!");
+            session.close(4000, "no username and/or password!");
 
         String username=parameter.get("username").get(0);
         String password=parameter.get("password").get(0);
-        if (JManager.getInstance().checkPassword(username, password)==0 &&
-            JManager.getInstance().setUserId(username, password)) {
+        int chk1;
+        boolean chk2=false;
+        if ((chk1=JClient.checkPassword(username, password))==0 &&
+            (chk2=JClient.setUserId(username, password))) {
             new Thread(()-> mailboxThread()).start();
+            this.username=username;
+            this.password=password;
             JDebug.out.info("connected as "+username);
             //mailbox.asObservable().subscribe(this::sendMessage);
         } else {
-            JDebug.out.info("invalid username and/or password!");
-            session.close(1001, "invalid username and/or password!");
+            JDebug.out.info("invalid username and/or password! "+chk1+"/"+(chk2?"true":"false"));
+            session.close(4000, "invalid username and/or password!");
         }
     }
 
@@ -91,7 +100,8 @@ public class ServerSocket implements WebSocketListener
         if (session.isOpen()) {
             //JDebug.out.info("Got onMessage: "+message);
             Messages.Message msg = onWebSocketTextGson.fromJson(message, Messages.Message.class);
-            //synchronized (session) {
+            synchronized (ServerSocket.mutex) {
+                JManager.getInstance().enqueueTask(()->JManager.getInstance().setUserId(username, password));
                 if (msg.dpSet != null)
                     cmdDpSet(msg.dpSet);
                 else if (msg.dpGet != null)
@@ -109,7 +119,7 @@ public class ServerSocket implements WebSocketListener
                 else {
                     JDebug.out.warning("unknown message: " + message);
                 }
-            //}
+            }
         }
     }
 
@@ -245,31 +255,52 @@ public class ServerSocket implements WebSocketListener
 
     //------------------------------------------------------------------------------------------------------------------
     private void cmdDpGetPeriod(Messages.DpGetPeriod cmd) {
-        JDpGetPeriod dpGetPeriod = JClient.dpGetPeriod(cmd.t1, cmd.t2, cmd.count);
+        JDpGetPeriod dpGetPeriod = JClient.dpGetPeriod(cmd.t1, cmd.t2, cmd.count!=null ? cmd.count : 0);
         dpGetPeriod.async();
         cmd.dps.forEach((dp)->dpGetPeriod.add(dp));
-        dpGetPeriod.action((JDpMsgAnswer hl)-> dpGetPeriodHotlink(cmd.id, hl));
+        dpGetPeriod.action((JDpMsgAnswer hl)-> dpGetPeriodHotlink(cmd.id, cmd.ts, hl));
         int ret = dpGetPeriod.send().await().getRetCode();
         if (ret!=0) mailbox.add(new Messages.Message().DpGetPeriodResult(cmd.id, ret));
     }
 
-    private void dpGetPeriodHotlink(Long Id, JDpMsgAnswer hotlink) {
+    private void dpGetPeriodHotlink(Long id, Integer ts, JDpMsgAnswer hotlink) {
         //JDebug.out.info(hotlink.toString());
+        SimpleDateFormat sdf = new SimpleDateFormat(Messages.DATEFORMAT);
         JsonObject jsonValues = new JsonObject();
         hotlink.forEach((item)->{
-            JsonArray jdps;
-            if (jsonValues.has(item.getDpName())) {
-                jdps=jsonValues.get(item.getDpName()).getAsJsonArray();
-            } else {
-                jdps=new JsonArray();
-                jsonValues.add(item.getDpName(), jdps);
+            JsonArray jval;
+            if (jsonValues.has(item.getDpName())) { // already exists
+                jval=jsonValues.get(item.getDpName()).getAsJsonArray();
+            } else { // add (empty) array for dp
+                jval=new JsonArray();
+                jsonValues.add(item.getDpName(), jval);
+                if (ts==3||ts==4) {
+                    jval.add(new JsonArray()); // times
+                    jval.add(new JsonArray()); // values
+                }
             }
-            JsonArray jrec = new JsonArray();
-            jrec.add(item.getTime());
-            jrec.add(var2json(item.getVariable()));
-            jdps.add(jrec);
+            JsonElement val=var2json(item.getVariable());
+            if (ts==null || ts==0) { // no ts
+                jval.add(val);
+            } else if (ts==1) { // [[t,v][t,v]...]
+                JsonArray jrec = new JsonArray();
+                jrec.add(sdf.format(item.getDate()));
+                jrec.add(val);
+                jval.add(jrec);
+            } else if (ts==2) { // [[t,v][t,v]...]
+                JsonArray jrec = new JsonArray();
+                jrec.add(item.getTime());
+                jrec.add(val);
+                jval.add(jrec);
+            } else if (ts==3) { // [[t,t,t,t,...][v,v,v,v,...]]
+                jval.get(0).getAsJsonArray().add(item.getTime()); // ms
+                jval.get(1).getAsJsonArray().add(val);
+            } else if (ts==4) { // [[t,t,t,t,...][v,v,v,v,...]]
+                jval.get(0).getAsJsonArray().add(sdf.format(item.getDate())); // ISO8601
+                jval.get(1).getAsJsonArray().add(val);
+            }
         });
-        mailbox.add(new Messages.Message().DpGetPeriodResult(Id, jsonValues));
+        mailbox.add(new Messages.Message().DpGetPeriodResult(id, jsonValues));
     }
 
     //------------------------------------------------------------------------------------------------------------------
@@ -279,14 +310,21 @@ public class ServerSocket implements WebSocketListener
             case BitVar:
                 return new JsonPrimitive(var.getBitVar().getValue());
             case IntegerVar:
+                return new JsonPrimitive(var.getIntegerVar().getValue());
             case UIntegerVar:
+                return new JsonPrimitive(var.getUIntegerVar().getValue());
             case LongVar:
+                return new JsonPrimitive(var.getLongVar().getValue());
             case ULongVar:
+                return new JsonPrimitive(var.getUIntegerVar().getValue());
             case FloatVar:
                 return new JsonPrimitive(var.getFloatVar().getValue());
             case Bit32Var:
+                return new JsonPrimitive(var.getBit32Var().getValue());
             case Bit64Var:
+                return new JsonPrimitive(var.getBit64Var().getValue());
             case BlobVar:
+                return JsonNull.INSTANCE;
             case TextVar:
                 return new JsonPrimitive(var.getTextVar().getValue());
             case TimeVar:
