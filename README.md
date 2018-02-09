@@ -3,13 +3,14 @@
 Connect programs (e.g. Python Program) to WinCC OA through a Websocket Manager. Programs can connect to WinCC OA and read/write/connect datapoints. Communication is JSON based, it’s simple to use for example with Python, see examples below. dpGet, dpSet, dpConnect, dpQueryConnect, dpGetPeriod, … more functions will be implemented<br>
 
 # Setup
-oa4j is needed: http://rocworks.at/oa4j/<br>
+oa4j is needed: https://drive.google.com/open?id=0B5KMeZJHdWWAd3J4bzVXazhpNWM<br>
 copy WCCOAjava.exe to \<project\>\bin directory<br>
 copy WCCOAjava.dll to \<project\>\bin directory<br>
 install http://www.microsoft.com/en-us/download/details.aspx?id=13523<br>
 install java runtime: https://java.com/de/download/<br>
 add C:\Program Files\Java\jre1.8.0_162\bin\server to PATH environment variable<br>
 <br>
+https://drive.google.com/open?id=1O32IaX_ajmWV_GzYT13fWL1fZcjDSvoW<br>
 copy wss\wss.jar to \<project\>\bin directory<br>
 copy wss\keystore.jks to \<project\><br>
 <br>
