@@ -6,6 +6,7 @@ dpGet, dpSet, dpConnect, dpQueryConnect, dpGetPeriod, … more functions will be
 
 # Setup
 oa4j is needed:<br>
+http://rocworks.at/oa4j/
 copy WCCOAjava.exe to <project>\bin directory<br>
 copy WCCOAjava.dll to <project>\bin directory<br>
   
@@ -81,3 +82,4 @@ Thread(target=read).start()
 cmd={"DpConnect": {"Id": 1, "Dps": ["ExampleDP_Trend1."]}}
 ws.send(json.dumps(cmd))
 ```
+...
