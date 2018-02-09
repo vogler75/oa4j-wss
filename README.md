@@ -6,11 +6,11 @@ dpGet, dpSet, dpConnect, dpQueryConnect, dpGetPeriod, … more functions will be
 
 # Setup
 oa4j is needed: http://rocworks.at/oa4j/<br>
-copy WCCOAjava.exe to <project>\bin directory<br>
-copy WCCOAjava.dll to <project>\bin directory<br>
+copy WCCOAjava.exe to \<project\>\bin directory<br>
+copy WCCOAjava.dll to \<project\>\bin directory<br>
   
-copy wss\wss.jar to <project>\bin directory<br>
-copy wss\keystore.jks to <project><br>
+copy wss\wss.jar to \<project\>\bin directory<br>
+copy wss\keystore.jks to \<project\><br>
   
 Add a WCCOAjava manager to your project:
 WCCOAjava -num 1 -cp bin/wss.jar -c wss/Server<br>
