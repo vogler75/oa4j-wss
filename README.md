@@ -123,7 +123,7 @@ ws.send(json.dumps(cmd))
     }
 }
 ```
-# DpQueryConnect
+## dpQueryConnect
 ```
 cmd={'DpQueryConnect': {'Id': 5, 'Query':"SELECT '_online.._value' FROM 'ExampleDP_*.'", 'Answer': True}}
 ws.send(json.dumps(cmd))
