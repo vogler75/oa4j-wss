@@ -10,8 +10,7 @@ copy WCCOAjava.dll to \<project\>\bin directory<br>
 copy wss\wss.jar to \<project\>\bin directory<br>
 copy wss\keystore.jks to \<project\><br>
   
-Add a WCCOAjava manager to your project:
-WCCOAjava -num 1 -cp bin/wss.jar -c wss/Server<br>
+Add a WCCOAjava manager to your project: -num 1 -cp bin/wss.jar -c wss/Server<br>
   
 # Python Examples
 see pyhton-client-example.py & python-client-plot.py!
