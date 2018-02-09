@@ -28,6 +28,7 @@ ws = create_connection(url, sslopt={"cert_reqs": ssl.CERT_NONE})
 ## dpGetPeriod
 ```
 cmd={'DpGetPeriod': {
+ 'Id': 1,
  'Dps':['ExampleDP_Trend1.'],
  'T1': '2018-02-07T18:10:00.000', 
  'T2': '2018-02-07T23:59:59.999',
@@ -46,6 +47,7 @@ else:
 {
     "DpGetPeriodResult": {
         "Error": 0,
+        "Id": 1,
         "Values": {
             "System1:ExampleDP_Trend1.:_offline.._value": [
                 6.0,
@@ -66,13 +68,14 @@ plt.show()
 ```
 ## dpGet
 ```
-cmd={'DpGet': {'Dps':['ExampleDP_Trend1.', 'ExampleDP_Trend2.']}}
+cmd={'DpGet': {'Id': 2, 'Dps':['ExampleDP_Trend1.', 'ExampleDP_Trend2.']}}
 ws.send(json.dumps(cmd))
 res=json.loads(ws.recv())
 print(json.dumps(res, indent=4, sort_keys=True))
 {
     "DpGetResult": {
         "Error": 0,
+        "Id": 2,
         "Values": {
             "System1:ExampleDP_Trend1.:_original.._value": 6.0,
             "System1:ExampleDP_Trend2.:_original.._value": 6.0
@@ -83,12 +86,19 @@ print(json.dumps(res, indent=4, sort_keys=True))
 ## dpSet
 ```
 from random import randint
-cmd={'DpSet': {'Wait': True, 
+cmd={'DpSet': {'Id': 3, 'Wait': True, 
  'Values':[{'Dp':'ExampleDP_Trend1.','Value': randint(0, 9)}, 
  {'Dp':'ExampleDP_Trend2.','Value': randint(0, 9)}]}}
 ws.send(json.dumps(cmd))
 res=json.loads(ws.recv())
 print(json.dumps(res, indent=4, sort_keys=True))
+{
+    "Response": {
+        "Code": 0,
+        "Id": 3,
+        "Message": ""
+    }
+}
 ```
 ## dpConnect
 ```
@@ -100,13 +110,13 @@ def read():
         print(res)
 Thread(target=read).start()
     
-cmd={"DpConnect": {"Id": 1, "Dps": ["ExampleDP_Trend1."]}}
+cmd={"DpConnect": {"Id": 4, "Dps": ["ExampleDP_Trend1."]}}
 ws.send(json.dumps(cmd))
 
 {
     "DpConnectResult": {
         "Error": 0,
-        "Id": 1,
+        "Id": 4,
         "Values": {
             "System1:ExampleDP_Trend1.:_online.._value": 6.0
         }
@@ -115,12 +125,13 @@ ws.send(json.dumps(cmd))
 ```
 # DpQueryConnect
 ```
-cmd={'DpQueryConnect': {'Query':"SELECT '_online.._value' FROM 'ExampleDP_*.'", 'Answer': True}}
+cmd={'DpQueryConnect': {'Id': 5, 'Query':"SELECT '_online.._value' FROM 'ExampleDP_*.'", 'Answer': True}}
 ws.send(json.dumps(cmd))
 '''
 {
     "DpQueryConnectResult": {
         "Error": 0,
+        "Id": 5,
         "Header": [
             "",
             ":_online.._value"
