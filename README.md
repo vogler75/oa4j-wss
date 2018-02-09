@@ -6,6 +6,9 @@ Connect programs (e.g. Python Program) to WinCC OA through a Websocket Manager. 
 oa4j is needed: http://rocworks.at/oa4j/<br>
 copy WCCOAjava.exe to \<project\>\bin directory<br>
 copy WCCOAjava.dll to \<project\>\bin directory<br>
+install http://www.microsoft.com/en-us/download/details.aspx?id=13523
+install java runtime: https://java.com/de/download/
+add C:\Program Files\Java\jre1.8.0_162\bin\server to PATH environment variable
   
 copy wss\wss.jar to \<project\>\bin directory<br>
 copy wss\keystore.jks to \<project\><br>
