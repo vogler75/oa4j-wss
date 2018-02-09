@@ -32,7 +32,7 @@ cmd={'DpGetPeriod': {
  'T1': '2018-02-07T18:10:00.000', 
  'T2': '2018-02-07T23:59:59.999',
  'Count': 0, # Optional (Default=0)
- 'Ts': 0 # Optional (0...no ts in result, 1...ts as ms since epoch, 2...ts as ISO8601)
+ 'Ts': 0 # Optional (0...no ts in result, 1...ts as ms since epoch, 2...ts as ISO8601, 3/4...ts/values in separate arrays (ms/iso))
  }}
 ws.send(json.dumps(cmd))
 res=json.loads(ws.recv())
@@ -42,6 +42,19 @@ if "System1:ExampleDP_Trend1.:_offline.._value" in res["DpGetPeriodResult"]["Val
  print(values)
 else:
  print("no data found")
+ 
+{
+    "DpGetPeriodResult": {
+        "Error": 0,
+        "Values": {
+            "System1:ExampleDP_Trend1.:_offline.._value": [
+                6.0,
+                6.0,
+                6.0
+            ]
+        }
+    }
+}
 ```
 ## Plot result of dpGetPeriod
 ```
@@ -57,6 +70,15 @@ cmd={'DpGet': {'Dps':['ExampleDP_Trend1.', 'ExampleDP_Trend2.']}}
 ws.send(json.dumps(cmd))
 res=json.loads(ws.recv())
 print(json.dumps(res, indent=4, sort_keys=True))
+{
+    "DpGetResult": {
+        "Error": 0,
+        "Values": {
+            "System1:ExampleDP_Trend1.:_original.._value": 6.0,
+            "System1:ExampleDP_Trend2.:_original.._value": 6.0
+        }
+    }
+}
 ```
 ## dpSet
 ```
@@ -80,5 +102,36 @@ Thread(target=read).start()
     
 cmd={"DpConnect": {"Id": 1, "Dps": ["ExampleDP_Trend1."]}}
 ws.send(json.dumps(cmd))
+
+{
+    "DpConnectResult": {
+        "Error": 0,
+        "Id": 1,
+        "Values": {
+            "System1:ExampleDP_Trend1.:_online.._value": 6.0
+        }
+    }
+}
 ```
-...
+# DpQueryConnect
+```
+cmd={'DpQueryConnect': {'Query':"SELECT '_online.._value' FROM 'ExampleDP_*.'", 'Answer': True}}
+ws.send(json.dumps(cmd))
+'''
+{
+    "DpQueryConnectResult": {
+        "Error": 0,
+        "Header": [
+            "",
+            ":_online.._value"
+        ],
+        "Values": [
+            [
+                "System1:ExampleDP_Trend1.",
+                6.0
+            ]
+        ]
+    }
+}
+'''
+```
