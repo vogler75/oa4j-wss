@@ -5,8 +5,7 @@ Connect programs (e.g. Python Program) to WinCC OA through a Websocket Manager. 
 dpGet, dpSet, dpConnect, dpQueryConnect, dpGetPeriod, … more functions will be implemented<br>
 
 # Setup
-oa4j is needed:<br>
-http://rocworks.at/oa4j/
+oa4j is needed: http://rocworks.at/oa4j/<br>
 copy WCCOAjava.exe to <project>\bin directory<br>
 copy WCCOAjava.dll to <project>\bin directory<br>
   
