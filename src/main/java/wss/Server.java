@@ -23,8 +23,12 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.log.Log;
 
+import java.io.IOException;
+import java.io.PrintStream;
 import java.util.logging.Level;
 
 public class Server {
@@ -38,11 +42,12 @@ public class Server {
         m.stop();
     }
 
-    public void run() throws InterruptedException {
+    public void run() throws IOException {
+        setOutput();
         wss(8080, 8443);
     }
 
-    public void wss(int port, int sslPort) {
+    public void wss(int port, int sslPort) throws IOException {
         org.eclipse.jetty.server.Server server = new org.eclipse.jetty.server.Server();
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
@@ -83,4 +88,17 @@ public class Server {
             JDebug.StackTrace(Level.SEVERE, e);
         }
     }
+
+    private void setOutput() throws IOException {
+        //We are configuring a RolloverFileOutputStream with file name pattern  and appending property
+        RolloverFileOutputStream os = new RolloverFileOutputStream(JManager.getInstance().getLogFile()+"_yyyy_mm_dd.log", true);
+
+        //We are creating a print stream based on our RolloverFileOutputStream
+        PrintStream logStream = new PrintStream(os);
+
+        //We are redirecting system out and system error to our print stream.
+        System.setOut(logStream);
+        System.setErr(logStream);
+    }
+
 }

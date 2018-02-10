@@ -136,9 +136,7 @@ public class ServerSocket implements WebSocketListener
                 Messages.Message message = mailbox.poll(100, TimeUnit.MILLISECONDS);
                 if (message!=null) {
                     String json = mailboxThreadGson.toJson(message);
-                    //synchronized (session) {
-                        session.getRemote().sendString(json, null);
-                    //}
+                    session.getRemote().sendString(json, null);
                 }
             } catch (InterruptedException e) {
                 JDebug.StackTrace(Level.SEVERE, e);
