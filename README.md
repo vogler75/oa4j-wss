@@ -8,7 +8,7 @@ copy WCCOAjava.exe to \<project\>\bin directory<br>
 copy WCCOAjava.dll to \<project\>\bin directory<br>
 install http://www.microsoft.com/en-us/download/details.aspx?id=13523<br>
 install java runtime: https://java.com/de/download/<br>
-add C:\Program Files\Java\jre1.8.0_162\bin\server to PATH environment variable<br>
+add C:\Program Files\Java\jre1.8.0_161\bin\server to PATH environment variable<br>
 <br>
 https://drive.google.com/open?id=1O32IaX_ajmWV_GzYT13fWL1fZcjDSvoW<br>
 copy wss\wss.jar to \<project\>\bin directory<br>
