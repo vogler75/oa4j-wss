@@ -5,7 +5,7 @@ from websocket import create_connection
 from threading import Thread
 from random import randint
 
-url='wss://localhost:8443/winccoa?username=demo&password=demo'
+url='ws://rocworks.no-ip.org/winccoa?username=demo&password=demo'
 ws = create_connection(url, sslopt={"cert_reqs": ssl.CERT_NONE})
 
 
