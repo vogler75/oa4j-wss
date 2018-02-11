@@ -1,6 +1,7 @@
 # Websocket Server for WinCC OA
 
-Connect programs (e.g. Python Program) to WinCC OA through a Websocket Manager. Programs can connect to WinCC OA and read/write/connect datapoints. Communication is JSON based, it’s simple to use for example with Python, see examples below. dpGet, dpSet, dpConnect, dpQueryConnect, dpGetPeriod, … more functions will be implemented<br>
+Connect programs (e.g. Python Program) to WinCC OA through a Websocket Manager. Programs can connect to WinCC OA and read/write/connect datapoints. Communication is JSON based, it’s simple to with Python, see the Jupyter Notebook example [Jupyter Notebook](https://github.com/vogler75/oa4j-wss/blob/master/python-notebook.ipynb) and the examples below. dpGet, dpSet, dpConnect, dpQueryConnect, dpGetPeriod, … more functions will be implemented.
+<br>
 
 # Setup
 oa4j is needed: https://drive.google.com/open?id=0B5KMeZJHdWWAd3J4bzVXazhpNWM<br>
