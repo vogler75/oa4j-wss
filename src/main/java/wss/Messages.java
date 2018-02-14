@@ -50,7 +50,10 @@ public class Messages {
 
     //------------------------------------------------------------------------------------------------------------------
     public static class Message {
+        Connection connection;
+
         DpSet dpSet;
+        DpSetResult dpSetResult;
 
         DpGet dpGet;
         DpGetResult dpGetResult;
@@ -66,10 +69,18 @@ public class Messages {
         DpGetPeriod dpGetPeriod;
         DpGetPeriodResult dpGetPeriodResult;
 
-        Response response;
+        public Message Connection(Long id, Integer code, String message) {
+            this.connection =new Connection(id, code, message);
+            return this;
+        }
 
         public Message DpSet(List<DpValue> values, Date timestamp, Boolean wait) {
             this.dpSet =new DpSet(values, timestamp, wait);
+            return this;
+        }
+
+        public Message DpSetResult(Long id, Integer error) {
+            this.dpSetResult =new DpSetResult(id, error);
             return this;
         }
 
@@ -142,11 +153,6 @@ public class Messages {
             this.dpGetPeriodResult = new DpGetPeriodResult(id, error);
             return this;
         }
-
-        public Message Response(Long id, Integer code, String message) {
-            this.response =new Response(id, code, message);
-            return this;
-        }
     }
 
     //------------------------------------------------------------------------------------------------------------------
@@ -192,6 +198,13 @@ public class Messages {
     }
 
     //------------------------------------------------------------------------------------------------------------------
+    public static class Connection extends Response {
+        public Connection(Long id, Integer code, String message) {
+            super(id, code, message);
+        }
+    }
+
+    //------------------------------------------------------------------------------------------------------------------
     public static class DpSet extends SerialId {
         List<DpValue> values;
         Date timestamp; // Optional for dpSetTimed
@@ -201,6 +214,12 @@ public class Messages {
             this.values=values;
             this.timestamp=timestamp;
             this.wait=wait;
+        }
+    }
+
+    public static class DpSetResult extends Result {
+        public DpSetResult(Long id, Integer error) {
+            super(id, error);
         }
     }
 

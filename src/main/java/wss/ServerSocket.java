@@ -35,7 +35,9 @@ import java.util.logging.Level;
 
 public class ServerSocket implements WebSocketListener
 {
-    public static Integer mutex = 0;
+    public static volatile Integer sessionCounter = 0;
+
+    private static Integer mutex = 0;
 
     private Session session;
 
@@ -52,8 +54,10 @@ public class ServerSocket implements WebSocketListener
 
     public void onWebSocketConnect(Session session)
     {
+        sessionCounter++;
+        updateSessionCounter();
         this.session=session;
-        JDebug.out.info("WebSocket Connect: {"+session+"}");
+        JDebug.out.info("WebSocket Sessions: "+sessionCounter+" Connection: {"+session+"}");
         Map<String, List<String>> parameter = session.getUpgradeRequest().getParameterMap();
         JDebug.out.info("parameter: "+parameter.toString());
         if (!parameter.containsKey("username") || parameter.get("username").size()==0 ||
@@ -69,19 +73,34 @@ public class ServerSocket implements WebSocketListener
             new Thread(()-> mailboxThread()).start();
             this.username=username;
             this.password=password;
-            JDebug.out.info("connected as "+username);
+            Integer ret = 0;
+            String msg = "connected";
+            JDebug.out.info(msg+" as "+username);
+            mailbox.add(new Messages.Message().Connection(0L, ret, "Connected"));
             //mailbox.asObservable().subscribe(this::sendMessage);
         } else {
-            JDebug.out.info("invalid username and/or password! "+chk1+"/"+(chk2?"true":"false"));
-            session.close(4000, "invalid username and/or password!");
+            Integer ret = 4000;
+            String msg = "invalid username and/or password!";
+            JDebug.out.info(msg+" ["+chk1+"/"+(chk2?"true":"false")+"]");
+            mailbox.add(new Messages.Message().Connection(0L, ret, msg));
+            session.close(ret, msg);
         }
     }
 
     public void onWebSocketClose(int statusCode, String reason)
     {
-        JDebug.out.info("WebSocket Close: {"+statusCode+"} - {"+reason+"}");
+        sessionCounter--;
+        updateSessionCounter();
+        JDebug.out.info("WebSocket Sessions: "+sessionCounter+" Close: {"+statusCode+"} - {"+reason+"}");
         dpConnects.forEach((k, c)->c.disconnect());
         dpQueryConnects.forEach((k, c)->c.disconnect());
+    }
+
+    private void updateSessionCounter() {
+        synchronized (ServerSocket.mutex) {
+            JManager.getInstance().enqueueTask(()->JManager.getInstance().setUserId(username, password));
+            JClient.dpSet("wss.sessions", sessionCounter);
+        }
     }
 
     public void onWebSocketError(Throwable cause)
@@ -100,7 +119,7 @@ public class ServerSocket implements WebSocketListener
         if (session.isOpen()) {
             //JDebug.out.info("Got onMessage: "+message);
             Messages.Message msg = onWebSocketTextGson.fromJson(message, Messages.Message.class);
-            synchronized (ServerSocket.mutex) {
+            synchronized (ServerSocket.mutex) { // must be synced so that setUserId is always before our command
                 JManager.getInstance().enqueueTask(()->JManager.getInstance().setUserId(username, password));
                 if (msg.dpSet != null)
                     cmdDpSet(msg.dpSet);
@@ -169,7 +188,7 @@ public class ServerSocket implements WebSocketListener
         }
         if (cmd.wait !=null && cmd.wait) {
             int ret = dpSet.send().await().getRetCode();
-            mailbox.add(new Messages.Message().Response(cmd.id, ret, ""));
+            mailbox.add(new Messages.Message().DpSetResult(cmd.id, ret));
         } else {
             dpSet.send();
         }

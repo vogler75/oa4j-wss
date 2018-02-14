@@ -96,7 +96,7 @@ public class ClientSocket implements WebSocketListener {
     }
 
     public void onWebSocketConnect(Session session) {
-        System.out.printf("Got connect: %s%n", session);
+        System.out.printf("Got connection: %s%n", session);
         this.session = session;
         this.connectedLatch.countDown();
     }
