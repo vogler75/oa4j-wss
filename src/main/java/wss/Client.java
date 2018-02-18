@@ -17,22 +17,15 @@
 */
 package wss;
 
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
-import java.util.Date;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import org.eclipse.jetty.websocket.api.Session;
 
 public class Client {
 
     public static void main(String[] args)
     {
-        final String url = (args.length > 0) ? args[0] : "ws://localhost:8080/winccoa?username=demo&password=demo";
+        final String url = (args.length > 0) ? args[0] : "ws://server2:8080/winccoa?username=demo&password=demo";
         final Double val = (args.length > 1) ? Double.valueOf(args[1]) : null;
 
         ClientSocket client = new ClientSocket() {
