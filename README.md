@@ -19,7 +19,7 @@ Add a WCCOAjava manager to your project: -num 1 -cp bin/wss.jar -c wss/Server<br
   
 # Python Examples
 see pyhton-client-example.py & python-client-plot.py!
-![Screenshot](python-client-plot.png)
+![Screenshot](src/python/client-plot.png)
 
 ## Open Connection
 ```
