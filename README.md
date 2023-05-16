@@ -4,17 +4,26 @@ Connect programs (e.g. Python Program) to WinCC OA through a Websocket Manager. 
 <br>
 
 # Server Setup
-oa4j is needed: https://drive.google.com/open?id=0B5KMeZJHdWWAd3J4bzVXazhpNWM<br>
-copy WCCOAjava.exe to \<project\>\bin directory<br>
-copy WCCOAjava.dll to \<project\>\bin directory<br>
-install http://www.microsoft.com/en-us/download/details.aspx?id=13523<br>
-install java runtime: https://java.com/de/download/<br>
-add C:\Program Files\Java\jre1.8.0_161\bin\server to PATH environment variable<br>
+oa4j is needed: https://rocworks.at/oa4j<br>
+Copy WCCOAjava.exe to \<project\>\bin directory<br>
+Copy WCCOAjava.dll to \<project\>\bin directory<br>
+Install java runtime: https://java.com/de/download/<br>
+Add C:\Program Files\Java\jre1.8.0_161\bin\server to PATH environment variable<br>
 <br>
-https://drive.google.com/open?id=1O32IaX_ajmWV_GzYT13fWL1fZcjDSvoW<br>
-copy wss\wss.jar to \<project\>\bin directory<br>
-copy wss\keystore.jks to \<project\><br>
+# Build Websocket Server
+You need [Maven](https://dlcdn.apache.org/maven/maven-3/3.8.8/binaries/apache-maven-3.8.8-bin.zip) and Java.
+> make.bat
+
+copy wss\wss.jar to \<project\>\bin directory  
+copy wss\keystore.jks to \<project\>  
+copy lib directory to your \<project\>\lib directory
 <br>
+Add the following lines to your config file. Copy the paths ffrom the classpath.txt file. This file is created during the build.
+```
+[java]
+classPath = "bin;bin/wss-1.0-SNAPSHOT.jar;lib/winccoa-java-1.0-SNAPSHOT.jar;lib/graphql-java-12.0.jar;lib/antlr4-runtime-4.7.2.jar;lib/slf4j-api-1.7.25.jar;lib/java-dataloader-2.1.1.jar;lib/reactive-streams-1.0.2.jar;lib/gson-2.8.2.jar;lib/websocket-server-9.4.8.v20171121.jar;lib/websocket-common-9.4.8.v20171121.jar;lib/websocket-api-9.4.8.v20171121.jar;lib/jetty-util-9.4.8.v20171121.jar;lib/jetty-io-9.4.8.v20171121.jar;lib/websocket-client-9.4.8.v20171121.jar;lib/jetty-client-9.4.8.v20171121.jar;lib/jetty-xml-9.4.8.v20171121.jar;lib/websocket-servlet-9.4.8.v20171121.jar;lib/javax.servlet-api-3.1.0.jar;lib/jetty-servlet-9.4.8.v20171121.jar;lib/jetty-security-9.4.8.v20171121.jar;lib/jetty-server-9.4.8.v20171121.jar;lib/jetty-http-9.4.8.v20171121.jar;lib/rxjava-1.3.5.jar"
+
+```
 Add a WCCOAjava manager to your project: -num 1 -cp bin/wss.jar -c wss/Server<br>
   
 # Python Examples
